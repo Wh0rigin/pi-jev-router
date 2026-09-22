@@ -246,4 +246,4 @@ pi-jev-router/
 
 ---
 
-*实验环境：pi 0.86.1 · glm-5.3-flash（某商业中转的受限通道，身份略）· jev-1.13.0（专有协议，细节略）· Node 24 · Windows。数据来自本仓库测试与 `~/.pi/jev-router/decisions.jsonl` 真实运行记录；图表由 `python scripts/charts.py` 从转写数据生成。*
+*实验环境：pi 0.86.1 · glm-5.3-flash · jev-1.13.0 · Node 24 · Windows。数据来自本仓库测试与 `~/.pi/jev-router/decisions.jsonl` 真实运行记录；图表由 `python scripts/charts.py` 从转写数据生成。*
