@@ -1,5 +1,33 @@
+# ---- Node / npm ----
 node_modules/
+npm-debug.log*
+yarn-error.log*
+package-lock.json.bak
+
+# ---- Python ----
 __pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# ---- Runtime artifacts ----
 *.log
 tmp/
+temp/
+*.tmp
+decision-prior-debug.jsonl
+jev-router-debug.jsonl
+
+# ---- Editor / OS ----
+.vscode/
+.idea/
 .DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Charts (regenerable via `python scripts/charts.py`) ----
+# assets/ is committed on purpose: README embeds the PNGs.
+
+# ---- Local experiment data (never commit decision logs) ----
+*.jsonl
+!test/fixtures/*.jsonl
