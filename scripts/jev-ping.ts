@@ -7,13 +7,14 @@
  * and a deep concurrency debug) plus latency. Exit code 0 = reachable.
  */
 
-import { consultJev, DEFAULT_JEV, resolveApiKey } from "../src/jev-client.ts";
+import { consultJev, resolveApiKey } from "../src/jev-client.ts";
+import { loadConfig } from "../src/config.ts";
 import { AgentState } from "../src/state.ts";
 
 async function main(): Promise<number> {
-  const cfg = { ...DEFAULT_JEV };
-  if (process.env.JEV_ENDPOINT) cfg.endpoint = process.env.JEV_ENDPOINT;
-  if (process.env.JEV_MODEL) cfg.model = process.env.JEV_MODEL;
+  // Same config chain as the running extension: ~/.pi/jev-router.json
+  // + JEV_ENDPOINT/JEV_MODEL env overrides.
+  const cfg = await loadConfig();
 
   if (!cfg.endpoint || !cfg.model) {
     console.error("jev is not configured: set JEV_ENDPOINT and JEV_MODEL (or use /jev-router set).");

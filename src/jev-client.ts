@@ -1,6 +1,6 @@
 /**
  * Jev client — talks to the same probabilistic decision service as
- * pi-decision-prior (systemone-style choice protocol), asking a single
+ * pi-decision-prior (proprietary choice protocol), asking a single
  * question: which thinking level should the agent use next?
  *
  * Key resolution order (same as pi-decision-prior):
@@ -34,7 +34,10 @@ export const DEFAULT_JEV: JevConfig = {
   // rule engine with a one-time warning.
   endpoint: "",
   model: "",
-  providerId: "cc-switch-packy-code-copy",
+  // cc-switch provider id used for API key lookup. Point this at whatever
+  // provider entry in your local credential store holds the jev key
+  // (set via config file or /jev-router set providerId <id>).
+  providerId: "",
   timeoutMs: 20_000,
 };
 

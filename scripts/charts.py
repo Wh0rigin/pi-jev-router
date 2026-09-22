@@ -2,7 +2,7 @@
 """Generate the charts embedded in README.md.
 
 All data is transcribed from real runs (see README §验证):
-  - E2E runs: pi (glm-5.3-flash) + real jev-1.13.0 via the systemone protocol
+  - E2E runs: pi (glm-5.3-flash) + real jev-1.13.0 via the proprietary choice protocol
   - Mock loop: test/integration.test.ts scenario (scripted jev answers)
   - Latencies: real jev call timings from those runs + jev-ping probes
 

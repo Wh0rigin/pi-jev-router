@@ -76,7 +76,7 @@ function startMockJev(script: ScriptedAnswer[]): Promise<{ server: Server; url: 
     server.listen(0, "127.0.0.1", () => {
       const addr = server.address();
       const port = typeof addr === "object" && addr ? addr.port : 0;
-      resolve({ server, url: `http://127.0.0.1:${port}/v1/systemone`, requests });
+      resolve({ server, url: `http://127.0.0.1:${port}/v1/decision`, requests });
     });
   });
 }
