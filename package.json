@@ -1,0 +1,16 @@
+{
+  "name": "pi-jev-router",
+  "version": "0.1.0",
+  "description": "Adaptive thinking-level router for pi: consults the jev decision model (with a local rule-engine fallback) to dynamically pick low/medium/high/xhigh reasoning effort as the task evolves",
+  "type": "module",
+  "scripts": {
+    "test": "node --test test/",
+    "ping": "node scripts/jev-ping.ts",
+    "charts": "python scripts/charts.py"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ]
+  }
+}
