@@ -37,6 +37,8 @@ export interface PolicyState {
   lastChangeTurn: number;
   escalations: number;
   downgrades: number;
+  /** Reasoning failures already seen by the last Jev call. */
+  lastJevCallFailures: number;
 }
 
 export interface ClampResult {
@@ -202,4 +204,13 @@ function summarizePressure(snap: TaskSnapshot): string {
 export function callGateOpen(ps: PolicyState, policy: PolicyConfig, now: number, force: boolean): boolean {
   if (force) return true;
   return now - ps.lastJevCallAt >= policy.minCallIntervalMs;
+}
+
+/**
+ * A failure that the last Jev call has not seen yet bypasses the interval
+ * gate: escalation on fresh evidence must not be swallowed by a cooldown
+ * started by the task-start call (short tasks live entirely inside it).
+ */
+export function freshFailureBypass(ps: PolicyState, reasoningFailures: number): boolean {
+  return reasoningFailures > ps.lastJevCallFailures;
 }

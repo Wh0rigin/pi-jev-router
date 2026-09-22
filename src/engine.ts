@@ -15,6 +15,7 @@ import type { DecisionLogEntry, DecisionSource, JsonlLogger } from "./logger.ts"
 import {
   callGateOpen,
   clampDecision,
+  freshFailureBypass,
   rulesDecideInitial,
   rulesDecideReeval,
   type PolicyConfig,
@@ -250,7 +251,10 @@ export class JevRouterEngine {
   private async maybeEscalate(turnIndex: number): Promise<void> {
     if (!this.state) return;
     const now = this.deps.now();
-    if (!callGateOpen(this.ps, this.deps.config, now, false)) return;
+    const gate =
+      callGateOpen(this.ps, this.deps.config, now, false) ||
+      freshFailureBypass(this.ps, this.state.reasoningFailures);
+    if (!gate) return;
     const snap = this.state.snapshot(this.deps.getContextTokens());
     const started = now;
     const outcome = await this.decide("failure", snap);
@@ -279,6 +283,11 @@ export class JevRouterEngine {
     this.applyOutcome(outcome, snap, "downgrade-check", this.deps.now() - started, turnIndex);
   }
 
+  private noteJevCall(): void {
+    this.ps.lastJevCallAt = this.deps.now();
+    this.ps.lastJevCallFailures = this.state?.reasoningFailures ?? 0;
+  }
+
   /**
    * Produce a raw suggested level: Jev when configured (falling back to rules
    * on any error), local rules otherwise. Never throws.
@@ -294,12 +303,12 @@ export class JevRouterEngine {
       try {
         const consult = this.deps.consultJev ?? defaultConsult(config);
         const jev = await consult(trigger, snap);
-        this.ps.lastJevCallAt = this.deps.now();
+        this.noteJevCall();
         this.decisions += 1;
         return { suggested: jev.level, source: "jev", jev };
       } catch (err) {
         // Jev failed -> safe fallback (spec principle 3).
-        this.ps.lastJevCallAt = this.deps.now();
+        this.noteJevCall();
         this.decisions += 1;
         const suggested =
           initialFallback ??
@@ -419,9 +428,8 @@ export class JevRouterEngine {
 const ROUTED_INDEX: Record<RoutedLevel, number> = { low: 0, medium: 1, high: 2, xhigh: 3 };
 
 function freshPolicyState(): PolicyState {
-  return { lastJevCallAt: 0, lastChangeTurn: -999, escalations: 0, downgrades: 0 };
+  return { lastJevCallAt: 0, lastChangeTurn: -999, escalations: 0, downgrades: 0, lastJevCallFailures: 0 };
 }
-
 /** Binds the real Jev client to the configured endpoint. */
 function defaultConsult(cfg: RouterConfig) {
   return (trigger: Trigger, snap: TaskSnapshot): Promise<JevResult> =>

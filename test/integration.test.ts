@@ -347,6 +347,28 @@ describe("integration: fallback safety", () => {
     assert.equal(warned2.length, 1);
   });
 
+  test("fresh failure bypasses the cooldown left by the task-start call", async () => {
+    // Regression: a short task (< minCallIntervalMs) whose first test run fails
+    // must still escalate — the task-start call must not swallow it.
+    const mock = await startMockJev([
+      { choice: "medium" }, // task start
+      { choice: "high" }, // failure within the cooldown window
+    ]);
+    const h = makeHarness({ endpoint: mock.url, model: "jev-mock", minCallIntervalMs: 60_000 });
+    try {
+      await h.engine.onTaskStart("fix the failing payment test");
+      assert.deepEqual(h.setCalls, ["medium"]);
+      // Failure arrives 1 second after task start — deep inside the 60s cooldown.
+      await h.engine.onTurnEnd(
+        bashFail("npm test", "FAIL payment.test.ts\nAssertionError: expected 99 to be 100"),
+        0,
+      );
+      assert.deepEqual(h.setCalls, ["medium", "high"]);
+    } finally {
+      await new Promise<void>((r) => mock.server.close(() => r()));
+    }
+  });
+
   test("environment-only failures never escalate nor call jev", async () => {
     const mock = await startMockJev([
       { choice: "medium" }, // task start

@@ -17,6 +17,7 @@ import {
   rulesDecideReeval,
   clampDecision,
   callGateOpen,
+  freshFailureBypass,
   DEFAULT_POLICY,
   type PolicyState,
 } from "../src/policy.ts";
@@ -316,6 +317,15 @@ describe("policy: clamps", () => {
     assert.equal(callGateOpen(ps, { ...DEFAULT_POLICY, minCallIntervalMs: 15_000 }, 10_000, false), false);
     assert.equal(callGateOpen(ps, { ...DEFAULT_POLICY, minCallIntervalMs: 15_000 }, 16_001, false), true);
     assert.equal(callGateOpen(ps, { ...DEFAULT_POLICY, minCallIntervalMs: 15_000 }, 2_000, true), true); // force
+  });
+
+  test("fresh failure bypasses the interval gate", () => {
+    const ps = policyState();
+    ps.lastJevCallAt = Date.now(); // just called
+    ps.lastJevCallFailures = 1;
+    assert.equal(freshFailureBypass(ps, 1), false); // no new failure
+    assert.equal(freshFailureBypass(ps, 2), true); // new failure since last call
+    assert.equal(freshFailureBypass(ps, 0), false);
   });
 });
 

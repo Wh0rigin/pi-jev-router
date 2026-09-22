@@ -4,7 +4,7 @@
  */
 
 import type { ErrorKind, ToolFailure } from "./errors.ts";
-import { classifyToolResult, type RawToolResult } from "./errors.ts";
+import { classifyToolResult, looksLikeTestRun, type RawToolResult } from "./errors.ts";
 import type { RoutedLevel } from "./levels.ts";
 
 export type TaskType =
@@ -133,6 +133,9 @@ export class AgentState {
   /** Ingest one finalized tool result. Returns the failure classification if it failed. */
   ingestToolResult(raw: RawToolResult): ToolFailure | null {
     this.toolCalls += 1;
+    // Count passing test runs too (a green run is still evidence about the task).
+    const isTestRun = looksLikeTestRun(raw);
+    if (isTestRun) this.testsRun += 1;
     const f = classifyToolResult(raw);
     if (raw.toolName === "edit" || raw.toolName === "write") {
       if (raw.path) {
@@ -146,10 +149,7 @@ export class AgentState {
     }
 
     if (f) {
-      if (f.isTestRun) {
-        this.testsRun += 1;
-        if (f.isTestFailure) this.testsFailed += 1;
-      }
+      if (f.isTestFailure) this.testsFailed += 1;
       if (f.kind === "environment") this.envFailures += 1;
       else this.reasoningFailures += 1; // reasoning + unknown both feed escalation
       this.recentError = f.excerpt;
