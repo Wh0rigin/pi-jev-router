@@ -69,8 +69,11 @@ export class JevRouterEngine {
   private warnedEnvOnly = false;
   /** Guards thinking_level_select feedback loop. */
   suppressLevelEvent = false;
+  private readonly deps: EngineDeps;
 
-  constructor(private readonly deps: EngineDeps) {}
+  constructor(deps: EngineDeps) {
+    this.deps = deps;
+  }
 
   // --------------------------------------------------------------------------
   // Event entry points
@@ -170,18 +173,20 @@ export class JevRouterEngine {
   /** thinking_level_select fired for a change we did not make. */
   onExternalLevelChange(level: ThinkingLevel): void {
     if (!this.state) return;
+    const before = this.state.currentLevel;
+    const after = foldLevel(level);
     this.manualOverride = true;
-    this.state.currentLevel = foldLevel(level);
+    this.state.currentLevel = after;
     this.deps.logger.append({
       kind: "decision",
       timestamp: new Date(this.deps.now()).toISOString(),
       task_id: this.state.taskId,
-      trigger: "task-start",
+      trigger: "manual-override",
       source: "fallback",
       task_type: this.state.taskType,
-      thinking_level_before: foldLevel(level),
-      thinking_level_after: foldLevel(level),
-      changed: false,
+      thinking_level_before: before,
+      thinking_level_after: after,
+      changed: before !== after,
       clamped: false,
       reason: `user manually set thinking level to ${level}; router suspended for this task`,
       previous_failures: this.state.reasoningFailures,
@@ -262,6 +267,7 @@ export class JevRouterEngine {
     const candidate =
       curIdx > 0 && // never below low
       (curIdx > baseIdx || longStable) &&
+      snap.execution.consecutive_clean_turns >= config.downgradeStableTurns && // avoid wasted Jev calls
       this.ps.downgrades < config.maxDowngradesPerTask &&
       turnIndex - this.ps.lastChangeTurn >= config.pinTurns;
     if (!candidate) return;
@@ -362,6 +368,15 @@ export class JevRouterEngine {
     this.lastSource = outcome.source;
 
     if (changed) {
+      // Sync the per-task counters the snapshot/summary report from.
+      const up = ROUTED_INDEX[after] > ROUTED_INDEX[before];
+      if (trigger === "task-start") {
+        // Initial selection is not an escalation event.
+      } else if (up) {
+        this.state.escalations += 1;
+      } else {
+        this.state.downgrades += 1;
+      }
       this.suppressLevelEvent = true;
       try {
         this.deps.setThinkingLevel(after);

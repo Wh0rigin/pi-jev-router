@@ -17,12 +17,13 @@ export type TaskType =
   | "optimization";
 
 const TASK_TYPE_PATTERNS: Array<[TaskType, RegExp]> = [
-  ["debugging", /\b(fix|debug|bug|error|exception|crash|stack ?trace|regression|NPE|stacktrace|failing|broken|修复|调试|报错|排错)\b/i],
-  ["architecture", /\b(architecture|architect|system design|overall design|schema design|migration plan|技术方案|架构|设计.{0,4}(系统|方案))\b/i],
-  ["refactoring", /\b(refactor|restructure|clean ?up|decouple|extract (class|method|module)|重(构|组)|整理)\b/i],
-  ["optimization", /\b(optimi[sz]e|performance|bottleneck|latency|speed ?up|too slow|memory usage|优化|性能|慢)\b/i],
+  // NOTE: \b word boundaries only work for ASCII; CJK alternatives must stay outside \b(...).
+  ["debugging", /\b(fix|debug|bug|error|exception|crash|stack ?trace|regression|NPE|stacktrace|failing|broken)\b|修复|调试|报错|排错/i],
+  ["architecture", /\b(architecture|architect|system design|overall design|schema design|migration plan)\b|技术方案|架构|设计.{0,6}(系统|方案)/i],
+  ["refactoring", /\b(refactor|restructure|clean ?up|decouple|extract (class|method|module))\b|重(构|组)|整理/i],
+  ["optimization", /\b(optimi[sz]e|performance|bottleneck|latency|speed ?up|too slow|memory usage)\b|优化|性能|慢/i],
   ["testing", /\b(write|add|fix) (the )?(unit )?tests?\b|\btest (suite|coverage|case)\b|单元测试|测试用例/i],
-  ["documentation", /\b(document|docs|readme|comment(s)? (for|on)|changelog|文档|注释|说明文档)\b/i],
+  ["documentation", /\b(document|docs|readme|comment(s)? (for|on)|changelog)\b|文档|注释|说明文档/i],
 ];
 
 export function classifyTaskType(prompt: string): TaskType {

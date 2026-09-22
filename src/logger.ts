@@ -18,7 +18,7 @@ export interface DecisionLogEntry {
   kind: "decision";
   timestamp: string;
   task_id: string;
-  trigger: "task-start" | "failure" | "downgrade-check";
+  trigger: "task-start" | "failure" | "downgrade-check" | "manual-override";
   source: DecisionSource;
   task_type: TaskType;
   thinking_level_before: RoutedLevel;
@@ -64,8 +64,11 @@ export type LogEntry = DecisionLogEntry | TaskSummaryLogEntry;
 export class JsonlLogger {
   private queue: LogEntry[] = [];
   private writing = false;
+  readonly path: string;
 
-  constructor(readonly path: string) {}
+  constructor(path: string) {
+    this.path = path;
+  }
 
   append(entry: LogEntry): void {
     this.queue.push(entry);
