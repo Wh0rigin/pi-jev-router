@@ -1,5 +1,5 @@
 /**
- * pi-jev-router — adaptive thinking-level router for pi.
+ * pi-thinking-router-jev — adaptive thinking-level router for pi.
  *
  * Consults the jev decision model (same choice protocol as pi-decision-prior)
  * at task start and on execution-feedback triggers (test failures, errors,

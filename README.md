@@ -1,4 +1,4 @@
-# pi-jev-router — 基于 Jev 的自适应 Thinking Level Router
+# pi-thinking-router-jev — 基于 Jev 的自适应 Thinking Level Router
 
 > 一个 [pi coding agent](https://pi.dev) 扩展：根据当前任务状态与执行反馈，动态选择模型的 Thinking Level（`low / medium / high / xhigh`），在保证任务成功率的前提下尽量用更低的推理档位，降低成本与延迟。
 >
@@ -17,7 +17,7 @@
 | 复杂 debug / 并发 / 多文件重构 | **high** | |
 | 大型架构设计 / 多次失败后的深水区 | **xhigh** | |
 
-档位不应该在任务开始时定死：**第一次尝试失败了，问题可能变难；连续顺利，可能又变简单**。pi-jev-router 把这个判断交给 Jev（一个高效的离散选择概率模型），把"持续重估"挂进 pi 的事件回路。
+档位不应该在任务开始时定死：**第一次尝试失败了，问题可能变难；连续顺利，可能又变简单**。pi-thinking-router-jev 把这个判断交给 Jev（一个高效的离散选择概率模型），把"持续重估"挂进 pi 的事件回路。
 
 ## 2 系统结构
 
@@ -77,7 +77,7 @@ flowchart TB
 ```bash
 # 方式一：注册到 pi settings（推荐，跟随 git 仓库更新）
 #   ~/.pi/agent/settings.json:
-#   "extensions": ["C:/Users/Administrator/Documents/pi-jev-router"]
+#   "extensions": ["C:/Users/Administrator/Documents/pi-thinking-router-jev"]
 
 # 方式二：临时加载
 pi -e ./index.ts
@@ -259,7 +259,7 @@ pi -e ./index.ts --no-session -p "<任务>"
 ## 9 仓库结构
 
 ```
-pi-jev-router/
+pi-thinking-router-jev/
 ├── index.ts            # pi 扩展入口：事件接线 + /jev-router 命令
 ├── src/
 │   ├── engine.ts       # 决策编排（可测试核心）

@@ -1,5 +1,5 @@
 {
-  "name": "pi-jev-router",
+  "name": "pi-thinking-router-jev",
   "version": "0.1.0",
   "description": "Adaptive thinking-level router for pi: consults the jev decision model (with a local rule-engine fallback) to dynamically pick low/medium/high/xhigh reasoning effort as the task evolves",
   "type": "module",
