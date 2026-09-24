@@ -135,7 +135,7 @@ JSONL，两种条目。`reason` 一律由本地钳制层生成；Jev 本身只�
 
 ## 6 验证
 
-三层验证：**单元/集成测试（全离线）→ 真实 Jev 连通性 → 真实 pi 端到端**。
+三层验证：**单元/集成测试（全离线）→ 真实 Jev 连通性 → 真实 pi 端到端**。测试设计的完整细节（各层覆盖什么、mock 服务器怎么设计、对抗样本清单、回归用例的来历）见 **[test/README.md](test/README.md)**。
 
 ![测试结果](assets/test-results.png)
 
@@ -203,7 +203,32 @@ pi -e ./index.ts --no-session -p "<任务>"
 
 **§6.4 的副产品：一个真实 bug。** 第一次 E2E 调试运行中，turn 0 的测试失败被 task-start 调用留下的 15s 冷却窗口**静默吞掉**（18.5s 的短任务整个落在窗口内）。修复方式是"新鲜失败旁路"：只要存在上次 Jev 调用未见过的推理失败，失败触发就绕过冷却。该回归场景已固化进集成测试（§6.1 第一条 ✔）。第二次 E2E 运行确认修复生效。
 
-### 6.5 结果小结
+### 6.5 3-seed A/B：固定 thinking=max（不切换）vs jev-router
+
+用 `scripts/benchmark.ts` 跑了真实 A/B 对比：同一“先跑失败测试、再修复”任务，A 臂**不加载扩展、档位恒为 max**（`pi --mode json --thinking max`），B 臂加载 jev-router 自动选档；每臂 3 次独立重复，A/B 交替执行以解耦时间漂移，每次运行使用全新临时目录。
+
+![3-seed A/B](assets/ab-3seed.png)
+
+| 指标（mean ± stdev，n=3） | fixed max | jev-router | Δ |
+|---|---|---|---|
+| wall 时间 | 20.8 ± 2.8 s | 21.3 ± 2.4 s | +2%（噪声范围内） |
+| input tokens（不含缓存） | 11883 ± 7070 | 9631 ± 1523 | **−19%** |
+| output tokens | 223 ± 38 | 215 ± 12 | −4% |
+| input+output 合计 | ≈ 12106 | ≈ 9846 | **≈ −19%** |
+| 任务成功 | 3/3 | 3/3 | 持平 |
+| 路由决策数 | — | 3–4 次/任务 | 含 task-start + 失败评估 + 降级检查 |
+
+**读数（如实）**：
+
+1. **成功率不打折**：6/6 运行全部修复成功，路由没有用低档位换失败率；
+2. **wall 时间持平**（+2%，n=3 下无统计意义）：路由器的 jev 调用开销（每次 0.4–1.7s、3–4 次）被更低/更合适的档位抵消；
+3. **输入 token 有下降趋势（−19%）**，但方差很大（max 臂 seed 1 冷缓存吃了 18732 tokens，剔除后两臂中位数相近）——n=3 只能看方向，不能下结论；
+4. 本表不含 jev 调用自身的消耗（数百 tokens/次）；
+5. 已知局限：LLM API 无真 seed，"3 seed" 指 3 次独立重复；glm-5.3-flash 的 `thinkingLevelMap` 仅 `max→max` 映射有效，其余档位不发思考参数，因此对比的本质是“每轮都带 max 思考 vs 大多数轮不带思考 + jev 开销”（见 [test/README.md](test/README.md) §4）。
+
+复现：`node scripts/benchmark.ts --seeds 3`，原始数据在 `tmp/benchmark-results.json`。
+
+### 6.6 结果小结
 
 1. **闭环成立**：任务起点、失败、降级三个触发点都真实到达 Jev，钳制层只在必要时修正；
 2. **Jev 有自己的"反升级"判断**：一行 bug 的测试失败它选择保持 medium（p=0.61），并非无脑升级——符合"能用低等级就不升"的核心目标；
@@ -238,8 +263,10 @@ pi-jev-router/
 │   ├── logger.ts       # JSONL 决策日志
 │   └── levels.ts       # 档位类型与折叠规则
 ├── test/               # unit / integration(mock jev) / live-jev
+│   └── README.md       # 测试设计文档（各层覆盖、对抗样本、回归用例）
 ├── scripts/
 │   ├── jev-ping.ts     # 连通性双探针
+│   ├── benchmark.ts    # 3-seed A/B 基准（fixed max vs jev-router）
 │   └── charts.py       # 本 README 全部图表（可复现）
 └── assets/             # 生成的 PNG
 ```

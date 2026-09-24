@@ -4,8 +4,10 @@
   "description": "Adaptive thinking-level router for pi: consults the jev decision model (with a local rule-engine fallback) to dynamically pick low/medium/high/xhigh reasoning effort as the task evolves",
   "type": "module",
   "scripts": {
-    "test": "node --test test/",
+    "test": "node --test \"test/**/*.test.ts\"",
+    "test:live": "node --test \"test/live-jev.test.ts\" --test-name-pattern .*",
     "ping": "node scripts/jev-ping.ts",
+    "benchmark": "node scripts/benchmark.ts --seeds 3",
     "charts": "python scripts/charts.py"
   },
   "pi": {

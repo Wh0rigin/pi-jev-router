@@ -9,6 +9,7 @@ All data is transcribed from real runs (see README §验证):
 Usage:  python charts.py      # writes PNGs to assets/
 """
 import os
+import statistics
 
 import matplotlib
 
@@ -39,6 +40,18 @@ MOCK_TURNS = [
     (4, "high", "test failed → escalate"),
     (5, "high", "failure → escalation cap reached"),
 ]
+
+# ---- 3-seed A/B: fixed max (no routing) vs jev-router ----------------------
+# Real runs via scripts/benchmark.ts (pi --mode json, glm-5.3-flash + jev-1.13.0,
+# fail-then-fix task, fresh dir per run, interleaved A/B order).
+AB = {
+    "fixed max": {
+        "wall": [24.0, 18.7, 19.8], "in": [18732, 12311, 4606], "out": [248, 242, 179],
+    },
+    "jev-router": {
+        "wall": [19.5, 20.3, 24.0], "in": [11390, 8771, 8731], "out": [225, 201, 218],
+    },
+}
 
 # ---- real jev probability distributions (choices over 4 levels) ------------
 # Every row is a real jev-1.13.0 response (E2E runs, ping probes, live test,
@@ -131,6 +144,32 @@ def fig_mock():
     plt.close(fig)
 
 
+def fig_ab():
+    fig, axes = plt.subplots(1, 3, figsize=(13, 4.2))
+    metrics = [("wall", "wall time (s)"), ("in", "input tokens (excl. cache)"), ("out", "output tokens")]
+    labels = list(AB.keys())
+    colors = ("#4C72B0", "#DD8452")
+    for ax, (key, title) in zip(axes, metrics):
+        for i, cfg in enumerate(("fixed max", "jev-router")):
+            vals = AB[cfg][key]
+            mean = statistics.mean(vals)
+            sd = statistics.stdev(vals)
+            x = i
+            ax.bar([x], [mean], width=0.5, yerr=[sd], capsize=5, color=colors[i],
+                   label=cfg if key == "wall" else None, alpha=0.9)
+            ax.scatter([x] * len(vals), vals, color="black", s=16, zorder=3, alpha=0.6)
+            ax.text(x, mean + sd * 0.15, f"{mean:.0f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+        ax.set_xticks(range(len(labels)))
+        ax.set_xticklabels(labels, fontsize=9)
+        ax.set_title(title, fontsize=10)
+        ax.grid(axis="y", alpha=0.3)
+    axes[0].legend(fontsize=8)
+    fig.suptitle("3-seed A/B: fixed thinking=max (no routing) vs jev-router — 3 independent runs each (bars: mean, whiskers: stdev, dots: per-run)", fontsize=9)
+    fig.tight_layout()
+    fig.savefig(os.path.join(OUT, "ab-3seed.png"), dpi=150)
+    plt.close(fig)
+
+
 def fig_distributions():
     fig, ax = plt.subplots(figsize=(10.5, 4.4))
     names = [d[0] for d in DISTRIBUTIONS][::-1]
@@ -192,6 +231,7 @@ def fig_suite():
 
 if __name__ == "__main__":
     os.makedirs(OUT, exist_ok=True)
+    fig_ab()
     fig_e2e()
     fig_mock()
     fig_distributions()
