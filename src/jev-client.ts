@@ -151,6 +151,13 @@ export async function consultJev(
   };
 
   const started = Date.now();
+  // Enforce the configured timeout across the whole exchange (DNS lookup,
+  // connect, TLS, headers, body). Without this a hung endpoint (blackholed
+  // connect, stalled response body, stuck DNS) leaves fetch pending forever,
+  // and since pi awaits extension handlers, it freezes the entire agent
+  // loop — the "typed input but the session never continues" failure mode.
+  const ms = Math.max(1_000, cfg.timeoutMs || DEFAULT_JEV.timeoutMs);
+  const timeoutSignal = AbortSignal.timeout(ms);
   const response = await fetch(cfg.endpoint, {
     method: "POST",
     headers: {
@@ -158,7 +165,7 @@ export async function consultJev(
       "content-type": "application/json",
     },
     body: JSON.stringify(payload),
-    signal,
+    signal: signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal,
   });
 
   if (!response.ok) {

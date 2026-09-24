@@ -25,6 +25,8 @@ interface ScriptedAnswer {
   status?: number;
   /** When set, respond with a malformed body. */
   malformed?: boolean;
+  /** When set, accept the request but never respond (simulates a hung endpoint). */
+  hang?: boolean;
 }
 
 function startMockJev(script: ScriptedAnswer[]): Promise<{ server: Server; url: string; requests: unknown[] }> {
@@ -41,6 +43,11 @@ function startMockJev(script: ScriptedAnswer[]): Promise<{ server: Server; url: 
       }
       const step = script[Math.min(i, script.length - 1)];
       i += 1;
+      if (step.hang) {
+        // Hold the request open forever: regression for the pi session freeze
+        // (unbounded fetch awaited by before_agent_start / turn_end).
+        return;
+      }
       if (step.status) {
         res.writeHead(step.status, { "content-type": "text/plain" });
         res.end("mock error");
@@ -324,6 +331,34 @@ describe("integration: fallback safety", () => {
       assert.equal(d.source, "fallback");
       assert.match(d.error!, /invalid|Unexpected|JSON/i);
     } finally {
+      await new Promise<void>((r) => mock.server.close(() => r()));
+    }
+  });
+
+  test("hung jev endpoint -> timeout fires, falls back to rules, loop completes", async () => {
+    // Regression for the "pi session freezes after typing input" bug:
+    // consultJev used to fetch without enforcing config.timeoutMs, so a
+    // stalled endpoint left the awaited engine promise pending forever.
+    const mock = await startMockJev([{ hang: true }]);
+    const h = makeHarness({ endpoint: mock.url, model: "jev-mock", timeoutMs: 1_000 });
+    try {
+      const started = Date.now();
+      await h.engine.onTaskStart("debug a flaky concurrency issue in the scheduler");
+      const elapsed = Date.now() - started;
+      assert.ok(elapsed < 5_000, `onTaskStart took ${elapsed}ms; timeout was not enforced`);
+      // Rules base for debugging is medium; the suggestion is applied verbatim.
+      assert.deepEqual(h.setCalls, ["medium"]);
+      assert.equal(h.status().lastSource, "fallback");
+
+      // The loop stays alive afterwards: clean turn -> no hang, no crash.
+      await h.engine.onTurnEnd(okTool("read"), 0);
+
+      const entries = await h.readLog();
+      const d = entries[0] as DecisionLogEntry;
+      assert.equal(d.source, "fallback");
+      assert.match(d.error!, /abort|timeout/i);
+    } finally {
+      mock.server.closeAllConnections();
       await new Promise<void>((r) => mock.server.close(() => r()));
     }
   });

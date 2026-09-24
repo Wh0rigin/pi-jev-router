@@ -95,6 +95,37 @@ export default function jevRouter(pi: ExtensionAPI) {
     }
   }
 
+  /**
+   * Hard cap for awaited engine work. pi awaits extension handlers on the
+   * agent-loop path (before_agent_start / turn_end), so an unresolved promise
+   * here freezes the whole session — typed input is queued and never runs.
+   * Jev calls are bounded by config.timeoutMs inside the client; this guard
+   * is the last-resort net for anything else. If it fires, the engine work
+   * may still complete later and apply its level change — clamps keep that
+   * benign, and it is logged like any other decision.
+   */
+  function runGuarded(label: string, work: () => Promise<void>): Promise<void> {
+    const ms = Math.max(30_000, (cfg?.timeoutMs ?? 20_000) * 2 + 10_000);
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    const cap = new Promise<void>((resolve) => {
+      timer = setTimeout(() => {
+        const msg = `jev-router: ${label} exceeded ${Math.round(ms / 1000)}s — skipped wait so the session can continue`;
+        try {
+          currentCtx?.ui.notify(msg, "warning");
+        } catch {
+          // UI unavailable (print mode).
+        }
+        console.error(`[jev-router] ${msg}`);
+        resolve();
+      }, ms);
+    });
+    const workPromise = work().finally(() => clearTimeout(timer));
+    // If the cap already won the race, a late rejection must not surface as
+    // an unhandled rejection.
+    workPromise.catch(() => {});
+    return Promise.race([workPromise, cap]);
+  }
+
   // ---------------------------------------------------------------- lifecycle
 
   pi.on("session_start", async (_event, ctx) => {
@@ -130,7 +161,7 @@ export default function jevRouter(pi: ExtensionAPI) {
     pendingSteer = false;
     // Steer/follow-up messages continue the current task; do not re-decide.
     if (wasSteer) return;
-    await engine.onTaskStart(event.prompt);
+    await runGuarded("task-start routing", () => engine.onTaskStart(event.prompt));
     updateStatus(ctx);
   });
 
@@ -148,7 +179,7 @@ export default function jevRouter(pi: ExtensionAPI) {
       };
     });
     toolInputs.clear();
-    await engine.onTurnEnd(raws, event.turnIndex);
+    await runGuarded("turn-end routing", () => engine.onTurnEnd(raws, event.turnIndex));
     updateStatus(ctx);
   });
 

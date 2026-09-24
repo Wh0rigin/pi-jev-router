@@ -4,7 +4,7 @@
 >
 > **它不切换模型，不写代码，不碰 Agent Loop** —— 只做一件事：读状态 → 问 Jev（或本地规则兜底）→ `pi.setThinkingLevel()`。
 
-[![tests](https://img.shields.io/badge/tests-44%20pass-brightgreen)]() [![pi](https://img.shields.io/badge/pi-0.86.1-blue)]() [![jev](https://img.shields.io/badge/jev--1.13.0-live%20verified-orange)]()
+[![tests](https://img.shields.io/badge/tests-45%20pass-brightgreen)]() [![pi](https://img.shields.io/badge/pi-0.86.1-blue)]() [![jev](https://img.shields.io/badge/jev--1.13.0-live%20verified-orange)]()
 
 ---
 
@@ -144,7 +144,7 @@ JSONL，两种条目。`reason` 一律由本地钳制层生成；Jev 本身只�
 
 ![测试结果](assets/test-results.png)
 
-### 6.1 单元 + 集成测试（44 项，全离线）
+### 6.1 单元 + 集成测试（45 项，全离线）
 
 ```bash
 npm test        # node --test test/
@@ -160,6 +160,7 @@ npm test        # node --test test/
 ✔ environment-only failures never escalate nor call jev
 ✔ jev HTTP failure -> falls back to local rules, keeps routing alive
 ✔ malformed jev answer -> fallback, invalid level never applied
+✔ hung jev endpoint -> timeout fires, falls back to rules, loop completes
 ```
 
 ### 6.2 脚本化全回路（集成测试场景）
