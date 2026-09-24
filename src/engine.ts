@@ -417,6 +417,8 @@ export class JevRouterEngine {
       jev_latency_ms: outcome.jev?.latencyMs ?? null,
       jev_confidence: outcome.jev?.confidence ?? null,
       jev_probabilities: outcome.jev?.probabilities ?? null,
+      jev_input_tokens: outcome.jev?.inputTokens ?? null,
+      jev_output_tokens: outcome.jev?.outputTokens ?? null,
       execution_time_ms: elapsedMs,
       ...(outcome.error ? { error: outcome.error } : {}),
     });

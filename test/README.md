@@ -102,7 +102,7 @@ task-start(medium) → 失败(high) → 干净轮(不动) → 干净轮(降级 m
 
 ### 2.4 数据完整性
 
-JSONL logger：自动创建父目录、异步 flush 落盘、每行合法 JSON、字段名与 spec §12 一致（`timestamp/task_id/trigger/source/task_type/thinking_level_before/thinking_level_after/changed/clamped/reason/previous_failures/tool_calls/tests_run/tests_failed/context_tokens/jev_latency_ms/execution_time_ms`）。
+JSONL logger：自动创建父目录、异步 flush 落盘、每行合法 JSON、字段名与 spec §12 一致（`timestamp/task_id/trigger/source/task_type/thinking_level_before/thinking_level_after/changed/clamped/reason/previous_failures/tool_calls/tests_run/tests_failed/context_tokens/jev_latency_ms/jev_input_tokens/jev_output_tokens/execution_time_ms`）。jev 自身 token 与主模型 usage 分列，便于按不同单价分别计费。
 
 ## 3. live 测试（`test/live-jev.test.ts`）
 

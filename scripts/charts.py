@@ -44,14 +44,18 @@ MOCK_TURNS = [
 # ---- 3-seed A/B: fixed max (no routing) vs jev-router ----------------------
 # Real runs via scripts/benchmark.ts (pi --mode json, glm-5.3-flash + jev-1.13.0,
 # fail-then-fix task, fresh dir per run, interleaved A/B order).
+# glm tokens (main model) and jev tokens (router, separately priced) are
+# reported SEPARATELY — never summed across models.
 AB = {
     "fixed max": {
-        "wall": [24.0, 18.7, 19.8], "in": [18732, 12311, 4606], "out": [248, 242, 179],
+        "wall": [21.9, 28.9, 18.8], "in": [18962, 4932, 7875], "out": [263, 293, 203],
     },
     "jev-router": {
-        "wall": [19.5, 20.3, 24.0], "in": [11390, 8771, 8731], "out": [225, 201, 218],
+        "wall": [21.9, 23.9, 22.4], "in": [15561, 7997, 4547], "out": [204, 290, 251],
     },
 }
+# jev-side token usage, billed under a different price — own panel.
+JEV_TOKENS = {"in": [2131, 2131, 2129], "out": [138, 138, 138]}
 
 # ---- real jev probability distributions (choices over 4 levels) ------------
 # Every row is a real jev-1.13.0 response (E2E runs, ping probes, live test,
@@ -145,8 +149,8 @@ def fig_mock():
 
 
 def fig_ab():
-    fig, axes = plt.subplots(1, 3, figsize=(13, 4.2))
-    metrics = [("wall", "wall time (s)"), ("in", "input tokens (excl. cache)"), ("out", "output tokens")]
+    fig, axes = plt.subplots(1, 4, figsize=(15.5, 4.2))
+    metrics = [("wall", "wall time (s)"), ("in", "glm input tokens (excl. cache)"), ("out", "glm output tokens")]
     labels = list(AB.keys())
     colors = ("#4C72B0", "#DD8452")
     for ax, (key, title) in zip(axes, metrics):
@@ -160,11 +164,23 @@ def fig_ab():
             ax.scatter([x] * len(vals), vals, color="black", s=16, zorder=3, alpha=0.6)
             ax.text(x, mean + sd * 0.15, f"{mean:.0f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
         ax.set_xticks(range(len(labels)))
-        ax.set_xticklabels(labels, fontsize=9)
+        ax.set_xticklabels(labels, fontsize=8)
         ax.set_title(title, fontsize=10)
         ax.grid(axis="y", alpha=0.3)
     axes[0].legend(fontsize=8)
-    fig.suptitle("3-seed A/B: fixed thinking=max (no routing) vs jev-router — 3 independent runs each (bars: mean, whiskers: stdev, dots: per-run)", fontsize=9)
+    # 4th panel: jev-side tokens, separately priced — never mixed with glm usage.
+    ax = axes[3]
+    for i, (key, title, color) in enumerate([("in", "jev input tokens", "#55A868"), ("out", "jev output tokens", "#8172B2")]):
+        vals = JEV_TOKENS[key]
+        mean, sd = statistics.mean(vals), statistics.stdev(vals)
+        ax.bar([i], [mean], width=0.5, yerr=[sd], capsize=5, color=color, alpha=0.9)
+        ax.scatter([i] * len(vals), vals, color="black", s=16, zorder=3, alpha=0.6)
+        ax.text(i, mean + 40, f"{mean:.0f}", ha="center", va="bottom", fontsize=9, fontweight="bold")
+    ax.set_xticks([0, 1])
+    ax.set_xticklabels(["jev in", "jev out"], fontsize=8)
+    ax.set_title("jev tokens (separate pricing)\n≈ 2.3k tokens per task", fontsize=10)
+    ax.grid(axis="y", alpha=0.3)
+    fig.suptitle("3-seed A/B: fixed thinking=max (no routing) vs jev-router — 3 independent runs each (bars: mean, whiskers: stdev, dots: per-run); glm and jev token pools reported separately", fontsize=8.5)
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, "ab-3seed.png"), dpi=150)
     plt.close(fig)

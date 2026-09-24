@@ -36,6 +36,9 @@ export interface DecisionLogEntry {
   jev_latency_ms: number | null;
   jev_confidence: number | null;
   jev_probabilities: Record<string, number> | null;
+  /** jev 自己的 token 消耗（单独计价，绝不与主模型的 usage 混合） */
+  jev_input_tokens: number | null;
+  jev_output_tokens: number | null;
   execution_time_ms: number;
   error?: string;
 }

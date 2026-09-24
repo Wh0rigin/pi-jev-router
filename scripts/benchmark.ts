@@ -59,6 +59,9 @@ interface RunResult {
   input_tokens: number;
   output_tokens: number;
   cache_read_tokens: number;
+  /** 主模型（glm）token 见上三项；jev 的 token 单独计价，分列统计 */
+  jev_input_tokens: number | null;
+  jev_output_tokens: number | null;
   success: boolean;
   decisions: number | null;
   error?: string;
@@ -78,6 +81,27 @@ function countLines(path: string): number {
     return readFileSync(path, "utf8").split("\n").filter(Boolean).length;
   } catch {
     return 0;
+  }
+}
+
+/** Sum jev-side tokens from the decision-log lines written during a run. */
+function jevTokensInNewLines(path: string, beforeLines: number): { input: number; output: number } {
+  try {
+    const lines = readFileSync(path, "utf8").split("\n").filter(Boolean);
+    let input = 0;
+    let output = 0;
+    for (const line of lines.slice(beforeLines)) {
+      try {
+        const e = JSON.parse(line) as { jev_input_tokens?: number | null; jev_output_tokens?: number | null };
+        input += e.jev_input_tokens ?? 0;
+        output += e.jev_output_tokens ?? 0;
+      } catch {
+        // skip malformed line
+      }
+    }
+    return { input, output };
+  } catch {
+    return { input: 0, output: 0 };
   }
 }
 
@@ -157,8 +181,13 @@ async function runOne(arm: "max" | "jev", seed: number): Promise<RunResult> {
     const { stdout, wall_s } = runPi(arm, workspace);
     const usage = parseUsage(stdout);
     const success = taskSucceeded(workspace);
-    const decisions =
-      arm === "jev" ? Math.max(0, countLines(DECISIONS_LOG) - before) : null;
+    let decisions: number | null = null;
+    let jevTokens = { input: 0, output: 0 };
+    if (arm === "jev") {
+      const after = countLines(DECISIONS_LOG);
+      decisions = Math.max(0, after - before);
+      jevTokens = jevTokensInNewLines(DECISIONS_LOG, before);
+    }
     return {
       arm,
       seed,
@@ -166,6 +195,8 @@ async function runOne(arm: "max" | "jev", seed: number): Promise<RunResult> {
       input_tokens: usage.input,
       output_tokens: usage.output,
       cache_read_tokens: usage.cacheRead,
+      jev_input_tokens: arm === "jev" ? jevTokens.input : null,
+      jev_output_tokens: arm === "jev" ? jevTokens.output : null,
       success,
       decisions,
       ...(usage.parseErrors > 0 ? { error: `${usage.parseErrors} unparsable event lines` } : {}),
@@ -205,6 +236,8 @@ async function main(): Promise<number> {
           input_tokens: 0,
           output_tokens: 0,
           cache_read_tokens: 0,
+          jev_input_tokens: null,
+          jev_output_tokens: null,
           success: false,
           decisions: null,
           error: (err as Error).message,
@@ -219,10 +252,10 @@ async function main(): Promise<number> {
   writeFileSync(outPath, JSON.stringify({ generated: new Date().toISOString(), seeds: n, results }, null, 2) + "\n");
 
   console.log(`\nresults written to ${outPath}`);
-  console.log("\narm  seed  wall_s  in_tok  out_tok  cache_tok  success  decisions");
+  console.log("\narm  seed  wall_s  glm_in  glm_out  glm_cache  jev_in  jev_out  success  decisions");
   for (const r of results) {
     console.log(
-      `${r.arm.padEnd(4)} ${String(r.seed).padEnd(5)} ${r.wall_s.toFixed(1).padEnd(7)} ${String(r.input_tokens).padEnd(7)} ${String(r.output_tokens).padEnd(8)} ${String(r.cache_read_tokens).padEnd(10)} ${String(r.success).padEnd(8)} ${r.decisions ?? "-"}`,
+      `${r.arm.padEnd(4)} ${String(r.seed).padEnd(5)} ${r.wall_s.toFixed(1).padEnd(7)} ${String(r.input_tokens).padEnd(7)} ${String(r.output_tokens).padEnd(8)} ${String(r.cache_read_tokens).padEnd(10)} ${String(r.jev_input_tokens ?? "-").padEnd(7)} ${String(r.jev_output_tokens ?? "-").padEnd(8)} ${String(r.success).padEnd(8)} ${r.decisions ?? "-"}`,
     );
   }
   return 0;
