@@ -97,7 +97,7 @@ task-start(medium) → 失败(high) → 干净轮(不动) → 干净轮(降级 m
 | 未配置 endpoint | 每会话一次 warning；纯规则路由；第二次任务不重复告警 |
 | 仅有环境型失败 | 不调 Jev、不升级、一次 warning |
 | 非推理模型 | 路由器整体不激活 |
-| `enabled: false`（/jev-router off） | 零决策、零调用 |
+| `enabled: false`（/thinking-router off） | 零决策、零调用 |
 | 冷却窗口内出现新鲜失败 | **仍然升级**（真实 E2E 发现的吞升级 bug 的回归） |
 
 ### 2.4 数据完整性

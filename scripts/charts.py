@@ -41,7 +41,7 @@ MOCK_TURNS = [
     (5, "high", "failure → escalation cap reached"),
 ]
 
-# ---- 3-seed A/B: max (no routing) vs jev-router ----------------------
+# ---- 3-seed A/B: max (no routing) vs thinking-router ----------------------
 # Real runs via scripts/benchmark.ts (pi --mode json, glm-5.3-flash + jev-1.13.0,
 # fail-then-fix task, fresh dir per run, interleaved A/B order).
 # glm tokens (main model) and jev tokens (router, separately priced) are
@@ -50,7 +50,7 @@ AB = {
     "max": {
         "wall": [21.9, 28.9, 18.8], "in": [18962, 4932, 7875], "out": [263, 293, 203],
     },
-    "jev-router": {
+    "thinking-router": {
         "wall": [21.9, 23.9, 22.4], "in": [15561, 7997, 4547], "out": [204, 290, 251],
     },
 }
@@ -154,7 +154,7 @@ def fig_ab():
     labels = list(AB.keys())
     colors = ("#4C72B0", "#DD8452")
     for ax, (key, title) in zip(axes, metrics):
-        for i, cfg in enumerate(("max", "jev-router")):
+        for i, cfg in enumerate(("max", "thinking-router")):
             vals = AB[cfg][key]
             mean = statistics.mean(vals)
             sd = statistics.stdev(vals)
@@ -180,7 +180,7 @@ def fig_ab():
     ax.set_xticklabels(["jev in", "jev out"], fontsize=8)
     ax.set_title("jev tokens (separate pricing)\n≈ 2.3k tokens per task", fontsize=10)
     ax.grid(axis="y", alpha=0.3)
-    fig.suptitle("3-seed A/B: fixed thinking=max (no routing) vs jev-router — 3 independent runs each (bars: mean, whiskers: stdev, dots: per-run); glm and jev token pools reported separately", fontsize=8.5)
+    fig.suptitle("3-seed A/B: fixed thinking=max (no routing) vs thinking-router — 3 independent runs each (bars: mean, whiskers: stdev, dots: per-run); glm and jev token pools reported separately", fontsize=8.5)
     fig.tight_layout()
     fig.savefig(os.path.join(OUT, "ab-3seed.png"), dpi=150)
     plt.close(fig)

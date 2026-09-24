@@ -26,7 +26,7 @@ flowchart TB
     USER["用户任务"] --> BAS["before_agent_start<br/>任务起点"]
     subgraph PI["pi coding agent"]
         LOOP["agent loop<br/>(模型 + 工具循环)"]
-        subgraph EXT["jev-router 扩展"]
+        subgraph EXT["thinking-router 扩展"]
             STATE["AgentState<br/>tool_calls · failures · tests<br/>changed_files · recent_error"]
             TRIG["触发器<br/>task-start / failure /<br/>downgrade-check"]
             POL["policy 防抖钳制<br/>+1/-1 步 · 上限 · 冷却<br/>手动覆盖 · 稳定窗口"]
@@ -83,7 +83,7 @@ flowchart TB
 pi -e ./index.ts
 ```
 
-配置文件 `~/.pi/jev-router.json`（也可用 `/jev-router set <key> <value>`）：
+配置文件 `~/.pi/thinking-router.json`（也可用 `/thinking-router set <key> <value>`）：
 
 ```json
 {
@@ -98,7 +98,7 @@ pi -e ./index.ts
   "downgradeStableTurns": 2,
   "pinTurns": 1,
   "logEnabled": true,
-  "logFile": "~/.pi/jev-router/decisions.jsonl"
+  "logFile": "~/.pi/thinking-router/decisions.jsonl"
 }
 ```
 
@@ -108,11 +108,11 @@ API key 解析顺序：`config.apiKey` → `JEV_API_KEY` 环境变量 → cc-swi
 ### 命令
 
 ```
-/jev-router            # 开关自动路由（写入配置，重启会话保留）
-/jev-router status     # 当前状态：档位来源 / 计数 / 日志路径
-/jev-router test       # 连通性测试（真实问一次 Jev）
-/jev-router set k v    # 改配置
-/jev-router log        # 最近 5 条决策
+/thinking-router            # 开关自动路由（写入配置，重启会话保留）
+/thinking-router status     # 当前状态：档位来源 / 计数 / 日志路径
+/thinking-router test       # 连通性测试（真实问一次 Jev）
+/thinking-router set k v    # 改配置
+/thinking-router log        # 最近 5 条决策
 ```
 
 状态栏徽标：`jev:medium`（Jev 主导）/ `jev:medium(rules)`（本地规则）/ `jev:medium(fallback)`（Jev 失败兜底）/ `jev:medium(manual)`（用户接管）。
@@ -195,7 +195,7 @@ JEV_ENDPOINT=... JEV_MODEL=jev-latest node scripts/jev-ping.ts
 pi -e ./index.ts --no-session -p "<任务>"
 ```
 
-三个真实任务（决策日志 `~/.pi/jev-router/decisions.jsonl`）：
+三个真实任务（决策日志 `~/.pi/thinking-router/decisions.jsonl`）：
 
 | 任务 | task-start 决策 | 后续触发 | 结果 |
 |---|---|---|---|
@@ -209,15 +209,15 @@ pi -e ./index.ts --no-session -p "<任务>"
 
 **§6.4 的副产品：一个真实 bug。** 第一次 E2E 调试运行中，turn 0 的测试失败被 task-start 调用留下的 15s 冷却窗口**静默吞掉**（18.5s 的短任务整个落在窗口内）。修复方式是"新鲜失败旁路"：只要存在上次 Jev 调用未见过的推理失败，失败触发就绕过冷却。该回归场景已固化进集成测试（§6.1 第一条 ✔）。第二次 E2E 运行确认修复生效。
 
-### 6.5 3-seed A/B：固定 thinking=max（不切换）vs jev-router
+### 6.5 3-seed A/B：固定 thinking=max（不切换）vs thinking-router
 
-用 `scripts/benchmark.ts` 跑了真实 A/B 对比：同一“先跑失败测试、再修复”任务，A 臂**不加载扩展、档位恒为 max**（`pi --mode json --thinking max`），B 臂加载 jev-router 自动选档；每臂 3 次独立重复，A/B 交替执行以解耦时间漂移，每次运行使用全新临时目录。
+用 `scripts/benchmark.ts` 跑了真实 A/B 对比：同一“先跑失败测试、再修复”任务，A 臂**不加载扩展、档位恒为 max**（`pi --mode json --thinking max`），B 臂加载 thinking-router 自动选档；每臂 3 次独立重复，A/B 交替执行以解耦时间漂移，每次运行使用全新临时目录。
 
 **计费口径说明**：主模型（glm）与 jev 是两个不同价格的模型，token **分开统计、分开呈现，永不混合**。glm token 来自 pi 的 `message_end.usage` 事件；jev token 来自决策日志的 `jev_input_tokens/jev_output_tokens` 字段（jev 协议响应自带的 usage）。换算成钱请分别套用各自单价。
 
 ![3-seed A/B](assets/ab-3seed.png)
 
-| 指标（mean ± stdev，n=3） | max | jev-router | Δ |
+| 指标（mean ± stdev，n=3） | max | thinking-router | Δ |
 |---|---|---|---|
 | wall 时间 | 23.2 ± 5.2 s | 22.7 ± 1.0 s | −2%（持平；路由臂方差更小） |
 | **glm** input tokens（不含缓存） | 10590 ± 7398 | 9368 ± 5633 | −11.5%（方向性） |
@@ -260,7 +260,7 @@ pi -e ./index.ts --no-session -p "<任务>"
 
 ```
 pi-thinking-router-jev/
-├── index.ts            # pi 扩展入口：事件接线 + /jev-router 命令
+├── index.ts            # pi 扩展入口：事件接线 + /thinking-router 命令
 ├── src/
 │   ├── engine.ts       # 决策编排（可测试核心）
 │   ├── policy.ts       # 本地规则引擎 + 防抖钳制
@@ -274,11 +274,11 @@ pi-thinking-router-jev/
 │   └── README.md       # 测试设计文档（各层覆盖、对抗样本、回归用例）
 ├── scripts/
 │   ├── jev-ping.ts     # 连通性双探针
-│   ├── benchmark.ts    # 3-seed A/B 基准（max vs jev-router）
+│   ├── benchmark.ts    # 3-seed A/B 基准（max vs thinking-router）
 │   └── charts.py       # 本 README 全部图表（可复现）
 └── assets/             # 生成的 PNG
 ```
 
 ---
 
-*实验环境：pi 0.86.1 · glm-5.3-flash · jev-1.13.0 · Node 24 · Windows。数据来自本仓库测试与 `~/.pi/jev-router/decisions.jsonl` 真实运行记录；图表由 `python scripts/charts.py` 从转写数据生成。*
+*实验环境：pi 0.86.1 · glm-5.3-flash · jev-1.13.0 · Node 24 · Windows。数据来自本仓库测试与 `~/.pi/thinking-router/decisions.jsonl` 真实运行记录；图表由 `python scripts/charts.py` 从转写数据生成。*

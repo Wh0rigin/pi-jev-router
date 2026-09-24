@@ -27,7 +27,7 @@ import { JsonlLogger } from "./src/logger.ts";
 import type { RawToolResult } from "./src/errors.ts";
 import type { RoutedLevel } from "./src/levels.ts";
 
-const COMMAND = "jev-router";
+const COMMAND = "thinking-router";
 
 interface PendingInput {
   command?: string;
@@ -109,13 +109,13 @@ export default function jevRouter(pi: ExtensionAPI) {
     let timer: ReturnType<typeof setTimeout> | undefined;
     const cap = new Promise<void>((resolve) => {
       timer = setTimeout(() => {
-        const msg = `jev-router: ${label} exceeded ${Math.round(ms / 1000)}s — skipped wait so the session can continue`;
+        const msg = `thinking-router: ${label} exceeded ${Math.round(ms / 1000)}s — skipped wait so the session can continue`;
         try {
           currentCtx?.ui.notify(msg, "warning");
         } catch {
           // UI unavailable (print mode).
         }
-        console.error(`[jev-router] ${msg}`);
+        console.error(`[thinking-router] ${msg}`);
         resolve();
       }, ms);
     });
@@ -213,7 +213,7 @@ export default function jevRouter(pi: ExtensionAPI) {
 
   pi.registerCommand(COMMAND, {
     description:
-      "Toggle adaptive thinking-level routing (/jev-router on|off|status|test|set|log)",
+      "Toggle adaptive thinking-level routing (/thinking-router on|off|status|test|set|log)",
     getArgumentCompletions: (prefix: string) => {
       const items = [
         ...SUBS.map((s) => ({ value: s, label: s })),
@@ -224,7 +224,7 @@ export default function jevRouter(pi: ExtensionAPI) {
     handler: async (args, ctx) => {
       currentCtx = ctx;
       if (!cfg || !engine) {
-        ctx.ui.notify("jev-router is still initializing; try again in a moment", "warning");
+        ctx.ui.notify("thinking-router is still initializing; try again in a moment", "warning");
         return;
       }
       const parts = args.trim().split(/\s+/).filter(Boolean);
@@ -236,8 +236,8 @@ export default function jevRouter(pi: ExtensionAPI) {
         updateStatus(ctx);
         ctx.ui.notify(
           cfg.enabled
-            ? `jev-router ENABLED (jev: ${jevConfigured(cfg) ? `${cfg.model}` : "not configured, local rules"})`
-            : "jev-router DISABLED (thinking level stays under your control)",
+            ? `thinking-router ENABLED (jev: ${jevConfigured(cfg) ? `${cfg.model}` : "not configured, local rules"})`
+            : "thinking-router DISABLED (thinking level stays under your control)",
           "info",
         );
         return;
@@ -247,7 +247,7 @@ export default function jevRouter(pi: ExtensionAPI) {
         const s = engine.status();
         ctx.ui.notify(
           [
-            `jev-router status`,
+            `thinking-router status`,
             `  enabled: ${s.enabled} | active: ${s.active} | manual override: ${s.manualOverride}`,
             `  model supports reasoning: ${s.reasoningModel} | jev configured: ${s.jevConfigured}`,
             `  endpoint: ${cfg.endpoint || "(not set)"} | model: ${cfg.model || "(not set)"}`,
@@ -265,7 +265,7 @@ export default function jevRouter(pi: ExtensionAPI) {
       if (sub === "test") {
         if (!jevConfigured(cfg)) {
           ctx.ui.notify(
-            `Jev is not configured. Set endpoint/model via /jev-router set endpoint <url>, /jev-router set model <id>, or JEV_ENDPOINT/JEV_MODEL env vars.`,
+            `Jev is not configured. Set endpoint/model via /thinking-router set endpoint <url>, /thinking-router set model <id>, or JEV_ENDPOINT/JEV_MODEL env vars.`,
             "warning",
           );
           return;
@@ -309,7 +309,7 @@ export default function jevRouter(pi: ExtensionAPI) {
           engine = buildEngine(cfg, logger);
         }
         updateStatus(ctx);
-        ctx.ui.notify(`jev-router ${key} = ${String(coerced.value)}`, "info");
+        ctx.ui.notify(`thinking-router ${key} = ${String(coerced.value)}`, "info");
         return;
       }
 
@@ -346,7 +346,7 @@ export default function jevRouter(pi: ExtensionAPI) {
       // help
       ctx.ui.notify(
         [
-          "jev-router commands:",
+          "thinking-router commands:",
           `  /${COMMAND}              toggle automatic routing`,
           `  /${COMMAND} on|off       explicit toggle`,
           `  /${COMMAND} status       configuration + live routing state`,
