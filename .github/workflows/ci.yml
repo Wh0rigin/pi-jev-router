@@ -1,0 +1,26 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node-version }}
+      # No dependencies to install: the extension is dependency-free and the
+      # tests rely on Node's native TypeScript type stripping (Node >= 22.6).
+      - name: Run test suite
+        run: node --test "test/**/*.test.ts"
+        env:
+          # live-jev test must stay skipped in CI: no credentials available.
+          JEV_LIVE: "0"

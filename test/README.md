@@ -136,3 +136,5 @@ npm run ping                                # 双探针连通性/判别力
 npm run benchmark                           # 第 4 层 A/B（约 10-20 分钟）
 npm run charts                              # 重新生成 README 图表
 ```
+
+CI：`.github/workflows/ci.yml` 在每次 push/PR 时于 Node 22 与 24 双版本跑第 1+2 层（live 测试在 CI 中自动 skip）；README 顶部的 ci 徽章即来自该 workflow。

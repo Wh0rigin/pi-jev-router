@@ -4,7 +4,7 @@
 >
 > **它不切换模型，不写代码，不碰 Agent Loop** —— 只做一件事：读状态 → 问 Jev（或本地规则兜底）→ `pi.setThinkingLevel()`。
 
-[![tests](https://img.shields.io/badge/tests-45%20pass-brightgreen)]() [![pi](https://img.shields.io/badge/pi-0.86.1-blue)]() [![jev](https://img.shields.io/badge/jev--1.13.0-live%20verified-orange)]()
+[![ci](https://github.com/Wh0rigin/pi-jev-router/actions/workflows/ci.yml/badge.svg)](https://github.com/Wh0rigin/pi-jev-router/actions/workflows/ci.yml) [![tests](https://img.shields.io/badge/tests-45%20pass%20%2B%201%20live-brightgreen)](test/README.md) [![pi](https://img.shields.io/badge/pi-0.86.1-blue)]() [![jev](https://img.shields.io/badge/jev--1.13.0-live%20verified-orange)]()
 
 ---
 
