@@ -211,7 +211,7 @@ async function main(): Promise<number> {
   const seeds = seedsArg ? Number(seedsArg.split("=")[1] ?? process.argv[process.argv.indexOf(seedsArg) + 1]) : 3;
   const n = Number.isFinite(seeds) && seeds > 0 ? Math.floor(seeds) : 3;
 
-  console.log(`3-seed A/B: fixed max vs jev-router — ${n} interleaved seeds per arm`);
+  console.log(`3-seed A/B: max vs jev-router — ${n} interleaved seeds per arm`);
   console.log(`task: fail-then-fix (calc.js integer division), fresh dir per run\n`);
 
   const results: RunResult[] = [];

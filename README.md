@@ -217,7 +217,7 @@ pi -e ./index.ts --no-session -p "<任务>"
 
 ![3-seed A/B](assets/ab-3seed.png)
 
-| 指标（mean ± stdev，n=3） | fixed max | jev-router | Δ |
+| 指标（mean ± stdev，n=3） | max | jev-router | Δ |
 |---|---|---|---|
 | wall 时间 | 23.2 ± 5.2 s | 22.7 ± 1.0 s | −2%（持平；路由臂方差更小） |
 | **glm** input tokens（不含缓存） | 10590 ± 7398 | 9368 ± 5633 | −11.5%（方向性） |
@@ -274,7 +274,7 @@ pi-jev-router/
 │   └── README.md       # 测试设计文档（各层覆盖、对抗样本、回归用例）
 ├── scripts/
 │   ├── jev-ping.ts     # 连通性双探针
-│   ├── benchmark.ts    # 3-seed A/B 基准（fixed max vs jev-router）
+│   ├── benchmark.ts    # 3-seed A/B 基准（max vs jev-router）
 │   └── charts.py       # 本 README 全部图表（可复现）
 └── assets/             # 生成的 PNG
 ```

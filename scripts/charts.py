@@ -41,13 +41,13 @@ MOCK_TURNS = [
     (5, "high", "failure → escalation cap reached"),
 ]
 
-# ---- 3-seed A/B: fixed max (no routing) vs jev-router ----------------------
+# ---- 3-seed A/B: max (no routing) vs jev-router ----------------------
 # Real runs via scripts/benchmark.ts (pi --mode json, glm-5.3-flash + jev-1.13.0,
 # fail-then-fix task, fresh dir per run, interleaved A/B order).
 # glm tokens (main model) and jev tokens (router, separately priced) are
 # reported SEPARATELY — never summed across models.
 AB = {
-    "fixed max": {
+    "max": {
         "wall": [21.9, 28.9, 18.8], "in": [18962, 4932, 7875], "out": [263, 293, 203],
     },
     "jev-router": {
@@ -154,7 +154,7 @@ def fig_ab():
     labels = list(AB.keys())
     colors = ("#4C72B0", "#DD8452")
     for ax, (key, title) in zip(axes, metrics):
-        for i, cfg in enumerate(("fixed max", "jev-router")):
+        for i, cfg in enumerate(("max", "jev-router")):
             vals = AB[cfg][key]
             mean = statistics.mean(vals)
             sd = statistics.stdev(vals)
